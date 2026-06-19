@@ -25,3 +25,17 @@
   text-align: start !important;
   unicode-bidi: isolate !important;
 }
+
+/*
+ * The "dir" attribute alone only sets direction via the UA stylesheet's
+ * implicit [dir] rule, which any author CSS rule with normal specificity
+ * (e.g. a site's own "direction: ltr" on its chat input/composer) overrides.
+ * Forcing "direction" here, keyed off the attribute we control, makes the
+ * fix win regardless of what the host page's own stylesheet declares.
+ */
+[dir="rtl"].persian-rtl-fix {
+  direction: rtl !important;
+}
+[dir="ltr"].persian-rtl-fix {
+  direction: ltr !important;
+}
