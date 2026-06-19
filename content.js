@@ -5,9 +5,12 @@
   // Arabic, Arabic Supplement, Arabic Extended-A, Arabic Presentation Forms A/B
   const PERSIAN_RE = /[؀-ۿݐ-ݿࢠ-ࣿﭐ-﷿ﹰ-﻿]/;
   const SKIP_TAGS = new Set(["SCRIPT", "STYLE", "NOSCRIPT", "PRE", "CODE", "SVG", "TEXTAREA", "INPUT"]);
+  // Real block-level containers — each one becomes a single, self-contained bidi unit.
   const BLOCK_SELECTOR =
     "p, div, li, td, th, h1, h2, h3, h4, h5, h6, blockquote, section, article, " +
-    "header, footer, dd, dt, figcaption, summary, label, span, a, button";
+    "header, footer, dd, dt, figcaption, summary";
+  // Only used when a text node has no block-level ancestor at all (rare).
+  const INLINE_FALLBACK_SELECTOR = BLOCK_SELECTOR + ", span, a, button, label";
 
   let enabled = true;
   const pending = new Set();
@@ -22,7 +25,7 @@
     if (!el) return null;
     if (SKIP_TAGS.has(el.tagName)) return null;
     if (el.closest("pre, code, script, style, svg")) return null;
-    return el.closest(BLOCK_SELECTOR);
+    return el.closest(BLOCK_SELECTOR) || el.closest(INLINE_FALLBACK_SELECTOR);
   }
 
   function applyFix(el) {

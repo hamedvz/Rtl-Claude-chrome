@@ -23,5 +23,5 @@
 .persian-rtl-fix {
   font-family: "Vazirmatn", Tahoma, Arial, sans-serif !important;
   text-align: start !important;
-  unicode-bidi: plaintext;
+  unicode-bidi: isolate !important;
 }
