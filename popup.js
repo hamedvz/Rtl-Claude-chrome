@@ -1,12 +1,23 @@
 const toggle = document.getElementById("enabled-toggle");
 const reloadBtn = document.getElementById("reload-tab");
+const scopeInputs = document.querySelectorAll('input[name="scope"]');
 
-chrome.storage.sync.get({ enabled: true }, (data) => {
+chrome.storage.sync.get({ enabled: true, scope: "all" }, (data) => {
   toggle.checked = data.enabled !== false;
+  const scope = data.scope === "claude-only" ? "claude-only" : "all";
+  scopeInputs.forEach((input) => {
+    input.checked = input.value === scope;
+  });
 });
 
 toggle.addEventListener("change", () => {
   chrome.storage.sync.set({ enabled: toggle.checked });
+});
+
+scopeInputs.forEach((input) => {
+  input.addEventListener("change", () => {
+    if (input.checked) chrome.storage.sync.set({ scope: input.value });
+  });
 });
 
 reloadBtn.addEventListener("click", async () => {

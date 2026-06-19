@@ -86,6 +86,37 @@ main {
   transform: translateX(-21px);
 }
 
+.scope-group {
+  border: 1px solid #334155;
+  border-radius: 8px;
+  padding: 10px 12px;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.scope-group legend {
+  font-size: 12px;
+  color: #94a3b8;
+  padding: 0 4px;
+}
+
+.radio-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.radio-row input {
+  accent-color: #38bdf8;
+  width: 14px;
+  height: 14px;
+  cursor: pointer;
+}
+
 .hint {
   font-size: 12px;
   line-height: 1.9;

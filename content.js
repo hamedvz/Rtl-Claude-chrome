@@ -11,10 +11,21 @@
     "header, footer, dd, dt, figcaption, summary";
   // Only used when a text node has no block-level ancestor at all (rare).
   const INLINE_FALLBACK_SELECTOR = BLOCK_SELECTOR + ", span, a, button, label";
+  const CLAUDE_HOST_RE = /(^|\.)claude\.ai$/i;
 
-  let enabled = true;
+  let userEnabled = true;
+  let scope = "all"; // "all" | "claude-only"
+  let active = true;
   const pending = new Set();
   let rafScheduled = false;
+
+  function isClaudeHost() {
+    return CLAUDE_HOST_RE.test(location.hostname);
+  }
+
+  function computeActive() {
+    return userEnabled && (scope === "all" || isClaudeHost());
+  }
 
   function hasPersian(text) {
     return !!text && PERSIAN_RE.test(text);
@@ -44,7 +55,7 @@
 
   function flush() {
     rafScheduled = false;
-    if (!enabled) {
+    if (!active) {
       pending.clear();
       return;
     }
@@ -62,7 +73,7 @@
   }
 
   function fixFormField(el) {
-    if (!enabled) return;
+    if (!active) return;
     const value = "value" in el ? el.value : "";
     if (hasPersian(value)) {
       if (el.dir !== "auto") el.dir = "auto";
@@ -91,7 +102,7 @@
   }
 
   const observer = new MutationObserver((mutations) => {
-    if (!enabled) return;
+    if (!active) return;
     for (const m of mutations) {
       if (m.type === "characterData") {
         const block = nearestBlock(m.target);
@@ -129,19 +140,26 @@
     document.querySelectorAll("." + MARK_CLASS).forEach(removeFix);
   }
 
+  function applySettings() {
+    const wasActive = active;
+    active = computeActive();
+    if (active) scanInitial(document.body);
+    else if (wasActive) disableAll();
+  }
+
   function init() {
-    chrome.storage.sync.get({ enabled: true }, (data) => {
-      enabled = data.enabled !== false;
-      if (enabled) scanInitial(document.body);
-      else disableAll();
+    chrome.storage.sync.get({ enabled: true, scope: "all" }, (data) => {
+      userEnabled = data.enabled !== false;
+      scope = data.scope === "claude-only" ? "claude-only" : "all";
+      applySettings();
     });
   }
 
   chrome.storage.onChanged.addListener((changes) => {
-    if (!changes.enabled) return;
-    enabled = changes.enabled.newValue !== false;
-    if (enabled) scanInitial(document.body);
-    else disableAll();
+    if (!changes.enabled && !changes.scope) return;
+    if (changes.enabled) userEnabled = changes.enabled.newValue !== false;
+    if (changes.scope) scope = changes.scope.newValue === "claude-only" ? "claude-only" : "all";
+    applySettings();
   });
 
   startObserving();
