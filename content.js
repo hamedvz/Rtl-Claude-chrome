@@ -3,7 +3,8 @@
 
   const MARK_CLASS = "persian-rtl-fix";
   // Arabic, Arabic Supplement, Arabic Extended-A, Arabic Presentation Forms A/B
-  const PERSIAN_RE = /[؀-ۿݐ-ݿࢠ-ࣿﭐ-﷿ﹰ-﻿]/;
+  const PERSIAN_COUNT_RE = /[؀-ۿݐ-ݿࢠ-ࣿﭐ-﷿ﹰ-﻿]/g;
+  const LATIN_COUNT_RE = /[A-Za-z]/g;
   const SKIP_TAGS = new Set(["SCRIPT", "STYLE", "NOSCRIPT", "PRE", "CODE", "SVG", "TEXTAREA", "INPUT"]);
   // Real block-level containers — each one becomes a single, self-contained bidi unit.
   const BLOCK_SELECTOR =
@@ -27,8 +28,16 @@
     return userEnabled && (scope === "all" || isClaudeHost());
   }
 
-  function hasPersian(text) {
-    return !!text && PERSIAN_RE.test(text);
+  // dir="auto" picks direction from the first strong character only, which
+  // flips an otherwise-Persian block to LTR whenever it happens to start
+  // with a Latin term (a product name, a markdown-bold word, etc). Counting
+  // letters and picking the majority script gives a much more stable result
+  // for headings/list items that mix the two scripts.
+  function dominantDirection(text) {
+    const persianCount = (text.match(PERSIAN_COUNT_RE) || []).length;
+    if (persianCount === 0) return null;
+    const latinCount = (text.match(LATIN_COUNT_RE) || []).length;
+    return persianCount >= latinCount ? "rtl" : "ltr";
   }
 
   function nearestBlock(node) {
@@ -42,15 +51,16 @@
   function applyFix(el) {
     if (!el || el.tagName === "BODY" || el.tagName === "HTML") return;
     const text = el.textContent;
-    if (text && text.length < 40000 && hasPersian(text)) {
-      if (el.dir !== "auto") el.dir = "auto";
-      el.classList.add(MARK_CLASS);
-    }
+    if (!text || text.length >= 40000) return;
+    const dir = dominantDirection(text);
+    if (!dir) return;
+    if (el.dir !== dir) el.dir = dir;
+    el.classList.add(MARK_CLASS);
   }
 
   function removeFix(el) {
     el.classList.remove(MARK_CLASS);
-    if (el.dir === "auto") el.removeAttribute("dir");
+    el.removeAttribute("dir");
   }
 
   function flush() {
@@ -75,8 +85,9 @@
   function fixFormField(el) {
     if (!active) return;
     const value = "value" in el ? el.value : "";
-    if (hasPersian(value)) {
-      if (el.dir !== "auto") el.dir = "auto";
+    const dir = dominantDirection(value);
+    if (dir) {
+      if (el.dir !== dir) el.dir = dir;
       el.classList.add(MARK_CLASS);
     } else {
       removeFix(el);
