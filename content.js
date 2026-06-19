@@ -148,7 +148,7 @@
   }
 
   function init() {
-    chrome.storage.sync.get({ enabled: true, scope: "all" }, (data) => {
+    chrome.storage.local.get({ enabled: true, scope: "all" }, (data) => {
       userEnabled = data.enabled !== false;
       scope = data.scope === "claude-only" ? "claude-only" : "all";
       applySettings();
